@@ -31,14 +31,6 @@ app.listen(3001, () => {
   console.log(`Server is listening on port ${3001}`);
 });
 
-// app.use(
-//   cors({
-//     origin: ["http://localhost:3001"],
-//     methods: ["GET", "POST", "PUT", "DELETE"],
-//     credentials: true,
-//   })
-// );
-
 app.use((req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
@@ -46,9 +38,13 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(cors());  
+
 app.use(cookieParser());
 
 app.use(express.json());
+
+app.use('/uploads', express.static('uploads'));
 
 app.use("/", homeRoutes);
 app.use("/admin", adminRoutes);

@@ -1,10 +1,24 @@
 const express = require('express');
+require("dotenv").config();
 const router = express.Router();
 const User = require('../models/User'); // Шлях до вашої моделі користувача
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { createSecretToken } = require('../util/SecretToken');
+const multer = require('multer');
+const path = require('path');
 
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Директорія, куди будуть збережені файли
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
+const upload = multer({ storage });
 
 module.exports = {
   registerUser: async (req, res) => {
@@ -18,11 +32,10 @@ module.exports = {
       if (existingUser) {
         return res.status(400).json({ message: 'Користувач з цим телефоном вже існує' });
       }
-      const hashedPassword = await bcrypt.hash(password, 12);
       const newUser = new User({
         name,
         phone,
-        password: hashedPassword,
+        password,
         numberOfVisits: 0
       });
       await newUser.save();
@@ -37,7 +50,7 @@ module.exports = {
     try {
       const { phone, password } = req.body;
 
-      if (!phone || !password) {
+      if (!password || !phone) {
         return res.status(400).json({ message: 'Будь ласка, заповніть всі обов\'язкові поля' });
       }
 
@@ -47,18 +60,17 @@ module.exports = {
         return res.status(404).json({ message: 'Користувача з вказаним телефоном не знайдено' });
       }
 
-      const isPasswordValid = await bcrypt.compare(hashedPassword, user.password);
+      const isPasswordValid = password === user.password;
 
-      console.log(hashedPassword);
-      console.log(user.password);
       if (!isPasswordValid) {
         return res.status(401).json({ message: 'Невірний пароль' });
       }
-      // Створення JWT-токена для авторизації
+
       const token = createSecretToken(user._id);
 
       // Відправлення токена відповіді
-      res.status(200).json({ token, userId: user._id });
+      res.status(200).json({ token, user: { userId: user._id, name: user.name, phone: user.phone, role: user.role } });
+      console.log(token, user._id);
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Помилка при авторизації користувача' });
@@ -108,6 +120,69 @@ module.exports = {
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Помилка при видаленні користувача' });
+    }
+  },
+  makeAvatar: async (req, res) => {
+    try {
+        upload.single('photo')(req, res, async (err) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ message: 'Помилка при завантаженні фото' });
+            }
+
+            // Доступ до завантаженого файлу через req.file
+            const filePath = req.file.path;
+
+            // Отримання JWT токена з заголовка Authorization
+            const token = req.headers.authorization && req.headers.authorization.split(' ')[1];
+
+            if (!token) {
+                return res.status(401).json({ message: 'Unauthorized: No token provided' });
+            }
+
+            try {
+                // Розшифрування та верифікація токена
+                const decoded = jwt.verify(token, process.env.TOKEN_KEY);
+
+                // Оновлення фото користувача в базі даних
+                const userId = decoded.id; // Використовуйте id, яке ви вставляєте при підписанні токена
+                const user = await User.findById(userId);
+
+                if (!user) {
+                    return res.status(404).json({ message: 'Користувача не знайдено' });
+                }
+
+                // Видалення попереднього фото, якщо воно існує
+                if (user.photo) {
+                    // Видалення попереднього файлу з сервера
+                    // Реалізуйте це за допомогою fs.unlink або іншого методу
+                }
+
+                // Оновлення посилання на фото в базі даних
+                user.photo = filePath;
+                await user.save();
+
+                res.status(200).json({ message: 'Фото успішно завантажено', filePath });
+            } catch (error) {
+                console.error(error);
+                return res.status(403).json({ message: 'Forbidden: Invalid token' });
+            }
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Помилка при завантаженні фото' });
+    }
+
+  },
+  getBarbers: async (req, res) => {
+    try {
+        // Отримання тільки барберів
+        const barbers = await User.find({ role: 'barber' });
+
+        res.status(200).json(barbers);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Помилка при отриманні барберів' });
     }
   }
 };

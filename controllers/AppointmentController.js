@@ -35,10 +35,10 @@ module.exports = {
                 return res.status(400).json({ message: 'Не всі послуги знайдено' });
             }
 
-            let totalCost = 0;
+            let totalPrice = 0;
             let totalDuration = 0;
             for (const service of selectedServices) {
-                totalCost += service.price;
+              totalPrice += service.price;
                 totalDuration += service.duration;
             }
 
