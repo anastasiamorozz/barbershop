@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js",
-    "prod": "node index.js"
+    "prod": "node index.js",
+    "prod:heroku": "pm2 start index.js"
   },
   "keywords": [],
   "author": "",
