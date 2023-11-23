@@ -27,7 +27,7 @@ mongoose
     process.exit(1); // Завершити процес, якщо не вдалося підключитися до бази даних
   });
 
-app.listen(process.env.PORT, () => {
+app.listen(process.env.PORT || 8000, () => {
   console.log(`Server is listening on port ${process.env.PORT}`);
 });
 
