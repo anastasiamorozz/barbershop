@@ -10,14 +10,14 @@ const homeRoutes = require('./routes/MainRoute');
 const authRoutes = require('./routes/AuthRoute');
 const adminRoutes = require('./routes/AdminRoute');
 const barberRoutes = require('./routes/BarberRoute');
-const { MONGO_URL, PORT } = process.env;
+const { MONGO_URL, PORT, DATABASE_USER, DATABASE_PASSWORD } = process.env;
 
 mongoose
-  .connect('mongodb+srv://pollodrax:<nastia>@cluster0.htpcyzl.mongodb.net/', {
+  .connect(process.env.MONGO_URL, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
-    user: 'pollodrax',
-    pass: 'nastia',
+    user: process.env.DATABASE_USER,
+    pass: process.env.DATABASE_PASSWORD,
   })
   .then(() => {
     console.log("MongoDB is connected successfully");

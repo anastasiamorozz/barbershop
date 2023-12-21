@@ -45,7 +45,7 @@ module.exports = {
       console.error(error);
       res.status(500).json({ message: 'Помилка при реєстрації користувача' });
     }
-  },
+  },  
   loginUser: async (req, res) => {
     try {
       const { phone, password } = req.body;
